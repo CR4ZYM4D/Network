@@ -1,3 +1,4 @@
+import random
 import numpy as np 
 
 # function for returning the sigmoid function of a value. Here z can be a vector or matrix and the np module would apply the sigmoid
@@ -46,4 +47,64 @@ class Network(object):
     # by the neural network as we dont train on individual inputs but rather batches of inputs at the cost of some precision.
     # If the batch sizes are not too large then most of the accuracy will pertain.
     def stochasticDescent(self , training_data , epochs , mini_batch_size , rate , test_data = None):
-        #training data is the list of tuples() where  
+        # training data is the list of tuples(x,y) where x is the training input and y is its desired output
+        # epochs is the number of times the network trains and iterates through the complete training data 
+        # mini_batch_size is the number of samples in each mini batch
+        # rate is the learning rate of the gradient descent
+        # test_data by default is none otherwise we test the model against it
+
+        if(test_data): num_tests = len(test_data)
+
+        # len_train_set is the length of the training data sets or the number of inputs given as training data 
+        len_train_set = len(training_data)
+
+        for j in range(epochs):
+            
+            #shuffling the training data
+            random.shuffle(training_data)
+
+            #dividing the training data in mini batches
+            #mini batches is a list of lists of training data. Where, each sub-list is of length mini_batch_size
+            mini_batches = [training_data [k:k+mini_batch_size] for k in range(0 , len_train_set , mini_batch_size)]
+
+            # updating weights and biases for each mini batch
+
+            for mini_batch in mini_batches : 
+                
+                self.updateValues(mini_batch , rate)
+
+            # printing the accuracy after each iteration of the training data by testing on the test data (if any)
+            
+            if(test_data):
+
+                print("Epoch " , j+1 , ": " , self.checkAccuracy(test_data) , " / " , num_tests)
+            
+            else:
+
+                print("Epoch complete")
+
+    # function to update the  weights and biases of the neural network according to the given and desired results of the mini batch 
+    # by help of call to the backpropagation function    
+    def updateValues(self , mini_batch , rate):
+        
+        # creating a list of weights and biases that will store the sum of the small change or differential weights and biases for
+        # each entry of the mini batch
+        # np.zeros(shape) creates a list/matrix of given shape with all entries as 0
+       
+        gradient_bias = [np.zeros(b.shape) for b in self.biases]
+        gradient_weight = [np.zeros(w.shape) for w in self.weights]
+
+        for x,y in mini_batch:
+
+            # the change in bias and weight required will be sent as tuple by the backpropagation function
+            delta_gradient_bias , delta_gradient_weight = self.backprop(x,y)
+
+            #adding the delta gradient values to the gradient lists
+            gradient_bias = [gb + dgb for gb,dgb in zip(gradient_bias , delta_gradient_bias)]
+            gradient_weight = [gw + dgw for gw,dgw in zip(gradient_weight , delta_gradient_weight)]
+
+        #updating the bias and weight lists
+        self.biases = [b-(rate/len(mini_batch))*gb for b, gb in zip(self.biases , gradient_bias)]
+        self.weights = [w-(rate/len(mini_batch))*gw for w , gw in zip(self.weights , gradient_weight)]
+
+    
