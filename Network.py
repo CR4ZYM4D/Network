@@ -81,7 +81,7 @@ class Network(object):
             
             else:
 
-                print("Epoch complete")
+                print("Epoch/s complete")
 
     # function to update the  weights and biases of the neural network according to the given and desired results of the mini batch 
     # by help of call to the backpropagation function    
@@ -97,7 +97,7 @@ class Network(object):
         for x,y in mini_batch:
 
             # the change in bias and weight required will be sent as tuple by the backpropagation function
-            delta_gradient_bias , delta_gradient_weight = self.backprop(x,y)
+            delta_gradient_bias , delta_gradient_weight = self.backpropagate(x,y)
 
             #adding the delta gradient values to the gradient lists
             gradient_bias = [gb + dgb for gb,dgb in zip(gradient_bias , delta_gradient_bias)]
@@ -106,5 +106,59 @@ class Network(object):
         #updating the bias and weight lists
         self.biases = [b-(rate/len(mini_batch))*gb for b, gb in zip(self.biases , gradient_bias)]
         self.weights = [w-(rate/len(mini_batch))*gw for w , gw in zip(self.weights , gradient_weight)]
+     
+    def backpropagate(self , x , y):
 
+        #creating lists to store the values of delta b and delta w
+        delta_b = [np.zeros(b.shape) for b in self.biases]
+        delta_w = [np.zeros(w.shape) for w in self.weights]
+
+        #Step 1: feed forwrd to find the error in result
+
+        #first setting the input vector as the activation and adding it to the activations list
+        activation = x
+        activations = [x] 
+
+        #creating a list of the z/input vector of each layer
+        z_list = []
+        for b , w in zip(self.biases , self.weights):
+            #calculating the input z of the next layer
+            z = np.dot(w,activation)+b 
+            z_list.append(z)
+            #calculating the activation of this layer & adding it to the activations list
+            activation = sigmoid(z)
+            activations.append(activation)
+        
+        # Step 2: calculating error of cost function
+        # calculating cost derivative of last layer predicted output versus actual result using equation 1
+        delta_cost = self.costDerivative(activations[-1] , y) * sigmoidDash(z_list[-1])
+
+        #Step 3: calculating the amount of change to be brought in biases and weights using eqns 2, 3 & 4
+        delta_b[-1] = delta_cost
+        delta_w[-1] = np.dot(activations[-2].transpose() , delta_cost)
+
+        for l in range(2 , self.numLayers):
+            delta_cost = np.dot(self.weights[-l+1].transpose() , delta_cost)*sigmoidDash(z_list[-l])
+
+            delta_b[-l] = delta_cost
+            delta_w[-l] = np.dot(activations[-l-1].transpose() , delta_cost)
+
+        #Step 4: return the delta matrices to find the gradient 
+        return (delta_b , delta_w)
+
+    #function to calculate the cost derivative for a MSE cost function with respect to activation a
+    def costDerivative(self , activation , y):
+        return (activation - y)
     
+    #function to check the accuracy of the network
+    def checkAccuracy(self , test_data ):
+
+        test_results = [(np.argmax(self.feedNextLayer(x)) , y) for (x,y) in test_data]
+        
+        sum = 0
+
+        for (x,y) in test_results:
+            if( int(x) == int(y)):
+                sum += 1
+        
+        return sum    
