@@ -6,7 +6,7 @@ import numpy as np
 sigmoid = lambda z : 1.0/(1.0 + np.exp(-z))
 
 # function for returning the derivative of the sigmoid function of a value. Similar to the sigmoid function 
-sigmoidDash = lambda x : np.exp(x)/((1.0 + np.exp(x))**2)   # we can also write sigmoidDash as sigmoid(x)*(1-sigmoid(x))
+sigmoidDash = lambda x : sigmoid(x)*(1-sigmoid(x))   # we can also write sigmoidDash as sigmoid(x)*(1-sigmoid(x))
 
 #designing the Network class
 
@@ -24,13 +24,13 @@ class Network(object):
         # 1. create an initial random bias for each neuron in the second layer onwards
         # 2. store the bias of the neuron of each layer in a list/vector
         # 3. store that list in another list at an index as that of the index of the neuron layer-1    
-        self.biases = [np.random.randn(y,1) for y in sizes[1:]]
+        self.biases = [(np.random.randn(y,1)) for y in sizes[1:]]
 
         # similar to the biases, create a list of initial random weight matrices of y rows and x columns where x, is the number
         # of neurons in the previous layer up to the second last layer and y is the number of neurons in the next layer starting 
         # from the second layer. This Matrix layout is so that the weight at the i th row and j th column represents the weight 
         # of the j th neuron of the previous layer with whose output value the i th neuron of the current layer should multiply it with  
-        self.weights = [np.random.randn(y,x) for x,y in zip(sizes [:-1] , sizes [1:])]
+        self.weights = [(np.random.rand(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
 
     # function to forward or "feed forward" the output of one layer of neurons of the network into the next layer after calculating it's
     # sigmoid function value
@@ -81,7 +81,7 @@ class Network(object):
             
             else:
 
-                print("Epoch/s complete")
+                print("Epoch complete")
 
     # function to update the  weights and biases of the neural network according to the given and desired results of the mini batch 
     # by help of call to the backpropagation function    
@@ -135,13 +135,13 @@ class Network(object):
 
         #Step 3: calculating the amount of change to be brought in biases and weights using eqns 2, 3 & 4
         delta_b[-1] = delta_cost
-        delta_w[-1] = np.dot(activations[-2].transpose() , delta_cost)
+        delta_w[-1] = np.dot(delta_cost , activations[-2].transpose())
 
         for l in range(2 , self.numLayers):
             delta_cost = np.dot(self.weights[-l+1].transpose() , delta_cost)*sigmoidDash(z_list[-l])
 
             delta_b[-l] = delta_cost
-            delta_w[-l] = np.dot(activations[-l-1].transpose() , delta_cost)
+            delta_w[-l] = np.dot(delta_cost , activations[-l-1].transpose())
 
         #Step 4: return the delta matrices to find the gradient 
         return (delta_b , delta_w)
@@ -153,12 +153,12 @@ class Network(object):
     #function to check the accuracy of the network
     def checkAccuracy(self , test_data ):
 
-        test_results = [(np.argmax(self.feedNextLayer(x)) , y) for (x,y) in test_data]
-        
-        sum = 0
+        test_results = [(np.argmax(self.feedNextLayer(x)) ,y) for (x, y) in test_data]
+            
+        return sum(x.all() == y.all() for x,y in test_results)
+    
+    def vectorResult(self,arr):
 
-        for (x,y) in test_results:
-            if( int(x) == int(y)):
-                sum += 1
-        
-        return sum    
+        result = [np.argmax(self.feedNextLayer(x) for x in arr)]
+
+        return result
