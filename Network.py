@@ -8,6 +8,7 @@ sigmoid = lambda z : 1.0/(1.0 + np.exp(-z))
 # function for returning the derivative of the sigmoid function of a value. Similar to the sigmoid function 
 sigmoidDash = lambda x : sigmoid(x)*(1-sigmoid(x))   # we can also write sigmoidDash as sigmoid(x)*(1-sigmoid(x))
 
+def softmax(x):return np.exp(x)/np.sum(np.exp(x))
 #designing the Network class
 
 class Network(object):
@@ -30,15 +31,16 @@ class Network(object):
         # of neurons in the previous layer up to the second last layer and y is the number of neurons in the next layer starting 
         # from the second layer. This Matrix layout is so that the weight at the i th row and j th column represents the weight 
         # of the j th neuron of the previous layer with whose output value the i th neuron of the current layer should multiply it with  
-        self.weights = [(np.random.rand(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
+        self.weights = [(np.random.randn(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
 
     # function to forward or "feed forward" the output of one layer of neurons of the network into the next layer after calculating it's
     # sigmoid function value
     def feedNextLayer(self , a):
-        for w,b in zip(self.weights , self.biases):
+        for w,b in zip(self.weights[:-1] , self.biases[:-1]):
            # taking the dot product/product of the input and weight vector/matrices and adding the bias matrix/vector 
            # before calculating its sigmoid velue to forward to the next layer 
             a = sigmoid(np.dot(w,a) + b)
+        a=softmax(np.dot(self.weights[-1] , a) + self.biases[-1])
         return a 
     
     # function to perform Stochastic Gradient Descent on the network. Stochastic Gradient Descent is a Gradient Descent technique where we
@@ -58,10 +60,10 @@ class Network(object):
         # len_train_set is the length of the training data sets or the number of inputs given as training data 
         len_train_set = len(training_data)
 
+         #shuffling the training data
+        random.shuffle(training_data)
+
         for j in range(epochs):
-            
-            #shuffling the training data
-            random.shuffle(training_data)
 
             #dividing the training data in mini batches
             #mini batches is a list of lists of training data. Where, each sub-list is of length mini_batch_size
@@ -148,7 +150,7 @@ class Network(object):
 
     #function to calculate the cost derivative for a MSE cost function with respect to activation a
     def costDerivative(self , activation , y):
-        return (activation - y)
+        return (y-activation)
     
     #function to check the accuracy of the network
     def checkAccuracy(self , test_data ):
