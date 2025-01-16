@@ -1,4 +1,5 @@
 import random
+import json
 import numpy as np 
 
 # function for returning the sigmoid function of a value. Here z can be a vector or matrix and the np module would apply the sigmoid
@@ -60,10 +61,10 @@ class Network(object):
         # len_train_set is the length of the training data sets or the number of inputs given as training data 
         len_train_set = len(training_data)
 
-         #shuffling the training data
-        random.shuffle(training_data)
-
         for j in range(epochs):
+
+            #shuffling the training data
+            random.shuffle(training_data)
 
             #dividing the training data in mini batches
             #mini batches is a list of lists of training data. Where, each sub-list is of length mini_batch_size
@@ -78,7 +79,8 @@ class Network(object):
             # printing the accuracy after each iteration of the training data by testing on the test data (if any)
             
             if(test_data):
-
+                
+                random.shuffle(test_data)
                 print("Epoch " , j+1 , ": " , self.checkAccuracy(test_data) , " / " , num_tests)
             
             else:
@@ -123,16 +125,23 @@ class Network(object):
 
         #creating a list of the z/input vector of each layer
         z_list = []
-        for b , w in zip(self.biases , self.weights):
+        for b , w in zip(self.biases[:-1] , self.weights[:-1]):
             #calculating the input z of the next layer
             z = np.dot(w,activation)+b 
             z_list.append(z)
             #calculating the activation of this layer & adding it to the activations list
             activation = sigmoid(z)
             activations.append(activation)
+        z=np.dot(self.weights[-1],activation)+self.biases[-1]
+        z_list.append(z)
+        activation = softmax(z)
+        activations.append(activation) 
         
         # Step 2: calculating error of cost function
         # calculating cost derivative of last layer predicted output versus actual result using equation 1
+        # the derivative of the sigmoid function is used here instead of the softmax for mathematical ease and computational efficiency
+        # as the derivative of the softmax function is a bit complex and the sigmoid function derivative is a good approximation , with a little
+        # change in hyper parameters most of the incurred losses of accuracy of the network can be compensated
         delta_cost = self.costDerivative(activations[-1] , y) * sigmoidDash(z_list[-1])
 
         #Step 3: calculating the amount of change to be brought in biases and weights using eqns 2, 3 & 4
@@ -159,8 +168,18 @@ class Network(object):
             
         return sum(x.all() == y.all() for x,y in test_results)
     
-    def vectorResult(self,arr):
+    #function to save the network sizes, weights and biases
+    def saveNetwork(self, filename):
+        data = {"sizes":self.sizes,
+                "weights":[w.tolist() for w in self.weights],
+                "biases":[b.tolist() for b in self.biases]}
+        with open(filename, 'w') as f:
+            json.dump(data, f)
 
-        result = [np.argmax(self.feedNextLayer(x) for x in arr)]
-
-        return result
+    #function to load the network sizes, weights and biases
+    def loadNetwork(self,filename):
+        with open(filename, 'r') as f:
+            data = json.load(f)
+            self.sizes = data["sizes"]
+            self.weights = [np.array(w) for w in data["weights"]]
+            self.biases = [np.array(b) for b in data["biases"]]
