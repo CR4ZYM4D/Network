@@ -32,7 +32,7 @@ class Network(object):
         # of neurons in the previous layer up to the second last layer and y is the number of neurons in the next layer starting 
         # from the second layer. This Matrix layout is so that the weight at the i th row and j th column represents the weight 
         # of the j th neuron of the previous layer with whose output value the i th neuron of the current layer should multiply it with  
-        self.weights = [(np.random.randn(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
+        self.weights = [(np.random.randn(y,x))/np.sqrt(x) for x,y in zip(sizes [:-1] , sizes [1:])]
 
     # function to forward or "feed forward" the output of one layer of neurons of the network into the next layer after calculating it's
     # sigmoid function value
@@ -55,7 +55,7 @@ class Network(object):
         # mini_batch_size is the number of samples in each mini batch
         # rate is the learning rate of the gradient descent
         # test_data by default is none otherwise we test the model against it
-
+        #reg is the regularization parameter
         if(test_data): num_tests = len(test_data)
 
         # len_train_set is the length of the training data sets or the number of inputs given as training data 
@@ -74,7 +74,7 @@ class Network(object):
 
             for mini_batch in mini_batches : 
                 
-                self.updateValues(mini_batch , rate)
+                self.updateValues(mini_batch , rate , len_train_set)
 
             # printing the accuracy after each iteration of the training data by testing on the test data (if any)
             
@@ -89,12 +89,12 @@ class Network(object):
 
     # function to update the  weights and biases of the neural network according to the given and desired results of the mini batch 
     # by help of call to the backpropagation function    
-    def updateValues(self , mini_batch , rate):
+    def updateValues(self , mini_batch , rate , length):
         
         # creating a list of weights and biases that will store the sum of the small change or differential weights and biases for
         # each entry of the mini batch
         # np.zeros(shape) creates a list/matrix of given shape with all entries as 0
-       
+        lmbda = 5
         gradient_bias = [np.zeros(b.shape) for b in self.biases]
         gradient_weight = [np.zeros(w.shape) for w in self.weights]
 
@@ -109,7 +109,7 @@ class Network(object):
 
         #updating the bias and weight lists
         self.biases = [b-(rate/len(mini_batch))*gb for b, gb in zip(self.biases , gradient_bias)]
-        self.weights = [w-(rate/len(mini_batch))*gw for w , gw in zip(self.weights , gradient_weight)]
+        self.weights = [w-(rate/len(mini_batch))*gw - (rate*lmbda*(w))/length for w , gw in zip(self.weights , gradient_weight)]
      
     def backpropagate(self , x , y):
 
