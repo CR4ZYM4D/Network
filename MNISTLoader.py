@@ -1,6 +1,7 @@
 import gzip
 import pickle as cp
 import numpy as np
+import random
 
 def loadDataset():
     f = gzip.open('mnist.pkl.gz','rb')
@@ -30,6 +31,10 @@ def loadWrapper():
     validation_data = list(zip(validation_inputs , validation_results))
 
     test_data = list(zip(test_inputs , test_results))
+
+    random.shuffle(training_data)
+    random.shuffle(validation_data)
+    random.shuffle(test_data)
 
     return (training_data , validation_data , test_data)
 
