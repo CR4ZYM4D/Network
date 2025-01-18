@@ -1,5 +1,8 @@
+#default libraries
 import random
 import json
+
+#additional libraries that need to be exclusively installed
 import numpy as np 
 
 # function for returning the sigmoid function of a value. Here z can be a vector or matrix and the np module would apply the sigmoid
@@ -32,16 +35,16 @@ class Network(object):
         # of neurons in the previous layer up to the second last layer and y is the number of neurons in the next layer starting 
         # from the second layer. This Matrix layout is so that the weight at the i th row and j th column represents the weight 
         # of the j th neuron of the previous layer with whose output value the i th neuron of the current layer should multiply it with  
-        self.weights = [(np.random.randn(y,x))/np.sqrt(x) for x,y in zip(sizes [:-1] , sizes [1:])]
+        self.weights = [(np.random.randn(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
 
     # function to forward or "feed forward" the output of one layer of neurons of the network into the next layer after calculating it's
     # sigmoid function value
     def feedNextLayer(self , a):
-        for w,b in zip(self.weights[:-1] , self.biases[:-1]):
+        for w,b in zip(self.weights , self.biases):
            # taking the dot product/product of the input and weight vector/matrices and adding the bias matrix/vector 
            # before calculating its sigmoid velue to forward to the next layer 
             a = sigmoid(np.dot(w,a) + b)
-        a=softmax(np.dot(self.weights[-1] , a) + self.biases[-1])
+        #a=softmax(np.dot(self.weights[-1] , a) + self.biases[-1])
         return a 
     
     # function to perform Stochastic Gradient Descent on the network. Stochastic Gradient Descent is a Gradient Descent technique where we
@@ -94,7 +97,7 @@ class Network(object):
         # creating a list of weights and biases that will store the sum of the small change or differential weights and biases for
         # each entry of the mini batch
         # np.zeros(shape) creates a list/matrix of given shape with all entries as 0
-        lmbda = 5
+        lmbda = 0.1
         gradient_bias = [np.zeros(b.shape) for b in self.biases]
         gradient_weight = [np.zeros(w.shape) for w in self.weights]
 
@@ -125,17 +128,17 @@ class Network(object):
 
         #creating a list of the z/input vector of each layer
         z_list = []
-        for b , w in zip(self.biases[:-1] , self.weights[:-1]):
+        for b , w in zip(self.biases, self.weights):
             #calculating the input z of the next layer
             z = np.dot(w,activation)+b 
             z_list.append(z)
             #calculating the activation of this layer & adding it to the activations list
             activation = sigmoid(z)
             activations.append(activation)
-        z=np.dot(self.weights[-1],activation)+self.biases[-1]
-        z_list.append(z)
-        activation = softmax(z)
-        activations.append(activation) 
+        #z=np.dot(self.weights[-1],activation)+self.biases[-1]
+        #z_list.append(z)
+        #activation = softmax(z)
+        #activations.append(activation) 
         
         # Step 2: calculating error of cost function
         # calculating cost derivative of last layer predicted output versus actual result using equation 1
