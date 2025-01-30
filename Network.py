@@ -1,6 +1,7 @@
 #default libraries
 import random
 import json
+import cv2
 
 #additional libraries that need to be exclusively installed
 import numpy as np 
@@ -12,7 +13,6 @@ sigmoid = lambda z : 1.0/(1.0 + np.exp(-z))
 # function for returning the derivative of the sigmoid function of a value. Similar to the sigmoid function 
 sigmoidDash = lambda x : sigmoid(x)*(1-sigmoid(x))   # we can also write sigmoidDash as sigmoid(x)*(1-sigmoid(x))
 
-def softmax(x):return np.exp(x)/np.sum(np.exp(x))
 #designing the Network class
 
 class Network(object):
@@ -35,16 +35,16 @@ class Network(object):
         # of neurons in the previous layer up to the second last layer and y is the number of neurons in the next layer starting 
         # from the second layer. This Matrix layout is so that the weight at the i th row and j th column represents the weight 
         # of the j th neuron of the previous layer with whose output value the i th neuron of the current layer should multiply it with  
-        self.weights = [(np.random.randn(y,x)) for x,y in zip(sizes [:-1] , sizes [1:])]
+        self.weights = [(np.random.randn(y,x))/np.sqrt(x) for x,y in zip(sizes [:-1] , sizes [1:])]
 
     # function to forward or "feed forward" the output of one layer of neurons of the network into the next layer after calculating it's
     # sigmoid function value
     def feedNextLayer(self , a):
-        for w,b in zip(self.weights , self.biases):
+        for w,b in zip(self.weights, self.biases):
            # taking the dot product/product of the input and weight vector/matrices and adding the bias matrix/vector 
            # before calculating its sigmoid velue to forward to the next layer 
             a = sigmoid(np.dot(w,a) + b)
-        #a=softmax(np.dot(self.weights[-1] , a) + self.biases[-1])
+     
         return a 
     
     # function to perform Stochastic Gradient Descent on the network. Stochastic Gradient Descent is a Gradient Descent technique where we
@@ -68,7 +68,10 @@ class Network(object):
 
             #shuffling the training data
             random.shuffle(training_data)
-
+            
+            if(j>=1 and j%4==0):
+               rate = rate * 0.5
+            
             #dividing the training data in mini batches
             #mini batches is a list of lists of training data. Where, each sub-list is of length mini_batch_size
             mini_batches = [training_data [k:k+mini_batch_size] for k in range(0 , len_train_set , mini_batch_size)]
@@ -97,12 +100,12 @@ class Network(object):
         # creating a list of weights and biases that will store the sum of the small change or differential weights and biases for
         # each entry of the mini batch
         # np.zeros(shape) creates a list/matrix of given shape with all entries as 0
-        lmbda = 0.1
+        lmbda = 1
         gradient_bias = [np.zeros(b.shape) for b in self.biases]
         gradient_weight = [np.zeros(w.shape) for w in self.weights]
 
         for x,y in mini_batch:
-
+            
             # the change in bias and weight required will be sent as tuple by the backpropagation function
             delta_gradient_bias , delta_gradient_weight = self.backpropagate(x,y)
 
@@ -135,16 +138,10 @@ class Network(object):
             #calculating the activation of this layer & adding it to the activations list
             activation = sigmoid(z)
             activations.append(activation)
-        #z=np.dot(self.weights[-1],activation)+self.biases[-1]
-        #z_list.append(z)
-        #activation = softmax(z)
-        #activations.append(activation) 
-        
+       
         # Step 2: calculating error of cost function
         # calculating cost derivative of last layer predicted output versus actual result using equation 1
-        # the derivative of the sigmoid function is used here instead of the softmax for mathematical ease and computational efficiency
-        # as the derivative of the softmax function is a bit complex and the sigmoid function derivative is a good approximation , with a little
-        # change in hyper parameters most of the incurred losses of accuracy of the network can be compensated
+       
         delta_cost = self.costDerivative(activations[-1] , y) * sigmoidDash(z_list[-1])
 
         #Step 3: calculating the amount of change to be brought in biases and weights using eqns 2, 3 & 4
@@ -162,20 +159,33 @@ class Network(object):
 
     #function to calculate the cost derivative for a MSE cost function with respect to activation a
     def costDerivative(self , activation , y):
-        return (y-activation)
+        return (activation-y)
     
     #function to check the accuracy of the network
     def checkAccuracy(self , test_data ):
 
-        test_results = [(np.argmax(self.feedNextLayer(x)) ,y) for (x, y) in test_data]
+        test_results = [(np.argmax(self.feedNextLayer(x)) ,np.argmax(y)) for (x, y) in test_data]
             
-        return sum(x.all() == y.all() for x,y in test_results)
+        return sum(x == y for x,y in test_results)
     
+    #function to read & predict value of user generated image from image path
+    def read(self,filename):
+        with open(filename,'r') as img:
+            img = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
+            img = cv2.bitwise_not(img)
+            img = np.array(img)/255
+            img  = cv2.resize(img , (28,28))
+            img = np.reshape(img , (784,1))
+
+        return np.argmax(self.feedNextLayer(img))
+
+
     #function to save the network sizes, weights and biases
     def saveNetwork(self, filename):
         data = {"sizes":self.sizes,
                 "weights":[w.tolist() for w in self.weights],
-                "biases":[b.tolist() for b in self.biases]}
+                "biases":[b.tolist() for b in self.biases]
+                }
         with open(filename, 'w') as f:
             json.dump(data, f)
 
